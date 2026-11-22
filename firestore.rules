@@ -1,0 +1,135 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global safety net: deny all access unless explicitly matched below
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidTimestamp(ts) {
+      return ts is timestamp && ts <= request.time;
+    }
+
+    function isValidParishionerProfile(data) {
+      return data.userId is string && data.userId == request.auth.uid && data.userId.size() <= 128 &&
+             data.fullName is string && data.fullName.size() >= 1 && data.fullName.size() <= 100 &&
+             data.email is string && data.email.size() <= 120 &&
+             data.websiteSyncStatus in ['FIRESTORE_ONLY', 'SYNCED_TO_WEBSITE', 'PENDING_API_CONFIG'] &&
+             (!('parishId' in data) || (data.parishId is string && data.parishId.size() <= 40)) &&
+             (!('phone' in data) || (data.phone is string && data.phone.size() <= 30)) &&
+             (!('address' in data) || (data.address is string && data.address.size() <= 250)) &&
+             (!('sccUnit' in data) || (data.sccUnit is string && data.sccUnit.size() <= 80)) &&
+             (!('headOfFamily' in data) || (data.headOfFamily is string && data.headOfFamily.size() <= 100)) &&
+             (!('dateOfBirth' in data) || (data.dateOfBirth is string && data.dateOfBirth.size() <= 30)) &&
+             (!('baptismDate' in data) || (data.baptismDate is string && data.baptismDate.size() <= 30)) &&
+             (!('spouseName' in data) || (data.spouseName is string && data.spouseName.size() <= 100)) &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidCertificateRequest(data) {
+      return data.userId is string && data.userId == request.auth.uid && data.userId.size() <= 128 &&
+             data.certificateType in ['BIRTH', 'COMMUNION', 'CONFIRMATION', 'MARRIAGE', 'DEATH'] &&
+             data.applicantName is string && data.applicantName.size() >= 1 && data.applicantName.size() <= 100 &&
+             data.subjectName is string && data.subjectName.size() >= 1 && data.subjectName.size() <= 100 &&
+             data.eventDate is string && data.eventDate.size() >= 1 && data.eventDate.size() <= 30 &&
+             data.purpose is string && data.purpose.size() >= 1 && data.purpose.size() <= 200 &&
+             data.status in ['SUBMITTED', 'UNDER_REVIEW', 'READY', 'CANCELLED'] &&
+             data.websiteSyncStatus in ['FIRESTORE_ONLY', 'SYNCED_TO_WEBSITE', 'PENDING_API_CONFIG'] &&
+             (!('placeOrParish' in data) || (data.placeOrParish is string && data.placeOrParish.size() <= 120)) &&
+             (!('parentsOrSpouseNames' in data) || (data.parentsOrSpouseNames is string && data.parentsOrSpouseNames.size() <= 160)) &&
+             (!('sponsorOrNextOfKin' in data) || (data.sponsorOrNextOfKin is string && data.sponsorOrNextOfKin.size() <= 120)) &&
+             (!('registryReference' in data) || (data.registryReference is string && data.registryReference.size() <= 60)) &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() <= 400)) &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if isOwner(userId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       incoming().keys().hasAll(['userId', 'fullName', 'email', 'websiteSyncStatus', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'parishId', 'fullName', 'email', 'phone', 'address',
+                         'sccUnit', 'headOfFamily', 'dateOfBirth', 'baptismDate',
+                         'spouseName', 'websiteSyncStatus', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidParishionerProfile(incoming());
+
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidParishionerProfile(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'parishId', 'fullName', 'email', 'phone', 'address',
+                         'sccUnit', 'headOfFamily', 'dateOfBirth', 'baptismDate',
+                         'spouseName', 'websiteSyncStatus', 'updatedAt'
+                       ]);
+
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      match /certificate_requests/{requestId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(requestId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(userId) &&
+                         isValidId(requestId) &&
+                         incoming().status == 'SUBMITTED' &&
+                         incoming().keys().hasAll([
+                           'userId', 'certificateType', 'applicantName', 'subjectName',
+                           'eventDate', 'purpose', 'status', 'websiteSyncStatus',
+                           'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'certificateType', 'applicantName', 'subjectName',
+                           'eventDate', 'placeOrParish', 'parentsOrSpouseNames',
+                           'sponsorOrNextOfKin', 'registryReference', 'purpose',
+                           'notes', 'status', 'websiteSyncStatus', 'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidCertificateRequest(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(userId) &&
+                         isValidId(requestId) &&
+                         isValidCertificateRequest(incoming()) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().certificateType == existing().certificateType &&
+                         existing().status in ['SUBMITTED', 'UNDER_REVIEW'] && (
+                           (incoming().status == 'CANCELLED' &&
+                            incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])) ||
+                           (incoming().status == existing().status &&
+                            incoming().diff(existing()).affectedKeys().hasOnly(['notes', 'purpose', 'websiteSyncStatus', 'updatedAt']))
+                         );
+
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(requestId);
+      }
+    }
+  }
+}

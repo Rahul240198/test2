@@ -1,0 +1,6 @@
+{
+  "name": "St. Anthony's",
+  "description": "Parishioner portal for St. Anthony's Church, Ajni — manage parishioner details, submit sacramental certificate requests (Birth, Communion, Confirmation, Marriage, Death), and bridge with the parish website API.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

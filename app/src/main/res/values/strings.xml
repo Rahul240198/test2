@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">St. Anthony\'s</string>
+    <string name="parish_full_name">St. Anthony\'s Church, Ajni</string>
+    <string name="parish_subtitle">Archdiocese of Nagpur • Est. 1935</string>
+    <string name="parish_address">Railway Colony, Ajni, Nagpur, Maharashtra 440003</string>
+    <string name="sign_in_mobile">Login with Mobile Number</string>
+    <string name="sign_out">Log Out</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_certificates">Request</string>
+    <string name="nav_profile">Profile</string>
+    <string name="nav_bridge">API Bridge</string>
+</resources>

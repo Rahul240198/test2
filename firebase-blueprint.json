@@ -1,0 +1,102 @@
+{
+  "entities": {
+    "ParishionerProfile": {
+      "title": "ParishionerProfile",
+      "description": "Authenticated parishioner record for St. Anthony's Church, Ajni, linked with Google Sign-In and optional Parish Registry ID.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Firebase Auth UID of the parishioner." },
+        "parishId": { "type": "string", "description": "Optional church registry or family card ID." },
+        "fullName": { "type": "string", "description": "Parishioner full name." },
+        "email": { "type": "string", "description": "Contact email address." },
+        "phone": { "type": "string", "description": "Mobile or landline phone number." },
+        "address": { "type": "string", "description": "Residential address in Ajni / Nagpur." },
+        "sccUnit": { "type": "string", "description": "Small Christian Community (SCC) or parish ward unit." },
+        "headOfFamily": { "type": "string", "description": "Name of household head." },
+        "dateOfBirth": { "type": "string", "description": "Date of birth." },
+        "baptismDate": { "type": "string", "description": "Date of baptism." },
+        "spouseName": { "type": "string", "description": "Spouse full name if married." },
+        "websiteSyncStatus": {
+          "type": "string",
+          "enum": ["FIRESTORE_ONLY", "SYNCED_TO_WEBSITE", "PENDING_API_CONFIG"],
+          "description": "Synchronization status with the parish website REST API bridge."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp updated via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": ["userId", "fullName", "email", "websiteSyncStatus", "createdAt", "updatedAt"]
+    },
+    "CertificateRequest": {
+      "title": "CertificateRequest",
+      "description": "Sacramental certificate request submitted by a parishioner (Birth, Communion, Confirmation, Marriage, or Death).",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Firebase Auth UID of the requesting parishioner." },
+        "certificateType": {
+          "type": "string",
+          "enum": ["BIRTH", "COMMUNION", "CONFIRMATION", "MARRIAGE", "DEATH"],
+          "description": "Type of sacramental certificate requested."
+        },
+        "applicantName": { "type": "string", "description": "Name of person submitting the request." },
+        "subjectName": { "type": "string", "description": "Full name on the requested certificate." },
+        "eventDate": { "type": "string", "description": "Date of birth, sacrament, marriage, or passing." },
+        "placeOrParish": { "type": "string", "description": "Hospital, chapel, or parish where event occurred." },
+        "parentsOrSpouseNames": { "type": "string", "description": "Parents' names or Bride/Groom names." },
+        "sponsorOrNextOfKin": { "type": "string", "description": "Sponsor, godparent, or next of kin." },
+        "registryReference": { "type": "string", "description": "Optional register book or parish ID reference." },
+        "purpose": { "type": "string", "description": "Reason for requesting the certificate." },
+        "notes": { "type": "string", "description": "Additional instructions for the parish office." },
+        "status": {
+          "type": "string",
+          "enum": ["SUBMITTED", "UNDER_REVIEW", "READY", "CANCELLED"],
+          "description": "Current processing status."
+        },
+        "websiteSyncStatus": {
+          "type": "string",
+          "enum": ["FIRESTORE_ONLY", "SYNCED_TO_WEBSITE", "PENDING_API_CONFIG"],
+          "description": "Synchronization status with the parish website REST API bridge."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp updated via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "userId",
+        "certificateType",
+        "applicantName",
+        "subjectName",
+        "eventDate",
+        "purpose",
+        "status",
+        "websiteSyncStatus",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/ParishionerProfile" },
+      "description": "Private parishioner profile document owned exclusively by the authenticated user."
+    },
+    "/users/{userId}/certificate_requests/{requestId}": {
+      "schema": { "$ref": "#/entities/CertificateRequest" },
+      "description": "Sacramental certificate requests owned by the authenticated parishioner."
+    }
+  }
+}
